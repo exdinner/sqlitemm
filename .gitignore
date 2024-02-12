@@ -1,0 +1,5 @@
+# `.cache` directory in the project root directory
+/.cache/
+
+# `build` directory in the project root directory
+/build/
