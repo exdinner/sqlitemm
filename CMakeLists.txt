@@ -14,7 +14,8 @@ set(${CMAKE_PROJECT_NAME}_INCLUDES
 
 set(${CMAKE_PROJECT_NAME}_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/src/db.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/stmt.cpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/stmt.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/value.cpp)
 
 add_library(${CMAKE_PROJECT_NAME} STATIC ${${CMAKE_PROJECT_NAME}_SRCS})
 target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_17)

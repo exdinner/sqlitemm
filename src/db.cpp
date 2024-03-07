@@ -1,28 +1,28 @@
+#include "sqlitemm/db.hpp"
 
-#include <algorithm>
-#include <iostream>
+#include <cstdio>
+#include <filesystem>
+#include <string>
 #include <utility>
-#include <vector>
 
 #include "sqlite3.h"
 
-#include "sqlitemm/db.hpp"
 #include "sqlitemm/stmt.hpp"
 
 namespace sqlitemm {
 
-DB::DB() {
-  open(":memory:");
+DB::DB() : db_file(":memory:") {
+  open();
 }
 
-DB::DB(const std::filesystem::path& file) {
-  open(file.string());
+DB::DB(const std::filesystem::path& file) : db_file(file) {
+  open();
 }
 
 DB::DB(DB&& db_old) noexcept
-  : sqlite3_ptr(db_old.sqlite3_ptr)
-  , stmt_ptrs(std::move(db_old.stmt_ptrs))
-  , db_file(std::move(db_old.db_file)) {
+  : sqlite3_ptr{db_old.sqlite3_ptr}
+  , stmt_ptrs{std::move(db_old.stmt_ptrs)}
+  , db_file{std::move(db_old.db_file)} {
   db_old.sqlite3_ptr = nullptr;
 }
 
@@ -38,16 +38,18 @@ DB::~DB() {
   close();
 }
 
-void DB::open(const std::string_view& filename) {
+void DB::open() {
   // close the previous connection
   if (sqlite3_ptr != nullptr) {
     close();
   }
 
-  int ret = sqlite3_open(filename.data(), reinterpret_cast<sqlite3**>(&sqlite3_ptr));
+  int ret = sqlite3_open(db_file.c_str(), reinterpret_cast<sqlite3**>(&sqlite3_ptr));
   if (ret != SQLITE_OK) {
-    std::cerr << "failed to open database `" << filename
-              << "`: " << sqlite3_errmsg(reinterpret_cast<sqlite3*>(sqlite3_ptr)) << '\n';
+    std::ignore = std::fprintf(stderr,
+                               "failed to open database `%s`: %s\n",
+                               db_file.c_str(),
+                               sqlite3_errmsg(reinterpret_cast<sqlite3*>(sqlite3_ptr)));
     sqlite3_close(reinterpret_cast<sqlite3*>(sqlite3_ptr));
     sqlite3_ptr = nullptr;
     return;
@@ -62,18 +64,23 @@ void DB::close() {
   // close connection
   int ret = sqlite3_close(reinterpret_cast<sqlite3*>(sqlite3_ptr));
   if (ret != SQLITE_OK) {
-    std::cerr << "failed to close database (may cause memory leak): "
-              << sqlite3_errmsg(reinterpret_cast<sqlite3*>(sqlite3_ptr)) << '\n';
+    std::ignore = std::fprintf(stderr,
+                               "failed to close database (may cause memory leak): %s\n",
+                               sqlite3_errmsg(reinterpret_cast<sqlite3*>(sqlite3_ptr)));
   }
   sqlite3_ptr = nullptr;
 }
 
-void DB::remove_stmt(Stmt* stmt) {
-  stmt_ptrs.erase(stmt);
+Stmt DB::prepare(const std::string& statement) {
+  return Stmt(this, statement);
 }
 
 const char* sqlite_version() {
   return sqlite3_libversion();
+}
+
+bool sqlite_thread_safe() {
+  return sqlite3_threadsafe() != 0;
 }
 
 } // namespace sqlitemm

@@ -2,7 +2,7 @@
 #define SQLITEMM_SQLITEMM_DB_HPP_
 
 #include <filesystem>
-#include <string_view>
+#include <string>
 #include <unordered_set>
 
 namespace sqlitemm {
@@ -26,18 +26,21 @@ public:
 
   virtual ~DB();
 
-  void open(const std::string_view& filename);
   void close();
+
+  Stmt prepare(const std::string& statement);
 
 protected:
   void* sqlite3_ptr{nullptr};
   std::unordered_set<Stmt*> stmt_ptrs;
   std::filesystem::path db_file;
 
-  void remove_stmt(Stmt* stmt);
+  void open();
 };
 
 const char* sqlite_version();
+// if sqlite3 is compiled to be thread safe
+bool sqlite_thread_safe();
 
 } // namespace sqlitemm
 
