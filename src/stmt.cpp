@@ -34,9 +34,12 @@ Value sqlite_value(sqlite3_stmt* stmt, const int& column) {
       break;
     }
     case SQLITE_NULL: return Value{Value::Null{nullptr}}; break;
+    default:
+      // should not happen
+      std::ignore
+        = std::fprintf(stderr, "failed to get value from sqlite3_column, which should not happen. returning NULL.\n");
+      break;
   }
-  // should not happen
-  std::ignore = std::fprintf(stderr, "failed to get value from sqlite3_column, which should not happen.\n");
   return Value{Value::Null{nullptr}};
 }
 
@@ -98,10 +101,19 @@ Stmt& Stmt::reset() {
   return *this;
 }
 
+Stmt& Stmt::clear_bindings() {
+  int ret = sqlite3_clear_bindings(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr));
+  if (ret != SQLITE_OK) {
+    std::ignore = std::fprintf(stderr, "something wrong with `sqlite3_clear_bindings`: %s\n", sqlite3_errstr(ret));
+  }
+  return *this;
+}
+
 void Stmt::close() {
   int ret = sqlite3_finalize(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr));
   if (ret != SQLITE_OK) {
-    std::ignore = std::fprintf(stderr, "failed to finalize statement (may cause memory leak): %s", sqlite3_errstr(ret));
+    std::ignore
+      = std::fprintf(stderr, "failed to finalize statement (may cause memory leak): %s\n", sqlite3_errstr(ret));
   }
   sqlite3_stmt_ptr = nullptr;
   // TODO(rayalto): thread safety
@@ -126,7 +138,7 @@ Stmt& Stmt::each_row(const std::function<void(const std::vector<Value>&)>& callb
       ret = sqlite3_step(stmt);
     } else {
       std::ignore = std::fprintf(stderr,
-                                 "failed to setp sqlite3 statement: %s",
+                                 "failed to setp sqlite3 statement: %s\n",
                                  sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr->sqlite3_ptr)));
       break;
     }
@@ -141,7 +153,22 @@ Stmt& Stmt::each_row(const std::function<void(const std::vector<std::string>&, c
   });
 }
 
-std::vector<std::string> Stmt::column_names() {
+[[nodiscard]] std::int64_t Stmt::changes() {
+  return db_ptr->changes();
+}
+
+[[nodiscard]] std::string Stmt::column_name(int column_index) {
+  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
+  int column_count = sqlite3_column_count(stmt);
+  if (column_index < 0 || column_index >= column_count) {
+    std::ignore = std::fprintf(
+      stderr, "failed to get column name: index(%d) out of range(%d-%d).\n", column_index, 0, column_count - 1);
+    return {};
+  }
+  return sqlite3_column_name(stmt, column_index);
+}
+
+[[nodiscard]] std::vector<std::string> Stmt::column_names() {
   sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
   int column_count = sqlite3_column_count(stmt);
   std::vector<std::string> names;
@@ -152,7 +179,7 @@ std::vector<std::string> Stmt::column_names() {
   return names;
 }
 
-std::vector<std::vector<Value>> Stmt::all_rows() {
+[[nodiscard]] std::vector<std::vector<Value>> Stmt::all_rows() {
   if (sqlite3_stmt_ptr == nullptr) {
     // already closed
     return {};
@@ -172,7 +199,7 @@ std::vector<std::vector<Value>> Stmt::all_rows() {
       ret = sqlite3_step(stmt);
     } else {
       std::ignore = std::fprintf(stderr,
-                                 "failed to setp sqlite3 statement: %s",
+                                 "failed to setp sqlite3 statement: %s\n",
                                  sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr->sqlite3_ptr)));
       break;
     }

@@ -46,7 +46,7 @@ public:
   [[nodiscard]] const Type& type() const&;
 
   template <typename T>
-  const T& as() const& {
+  [[nodiscard]] const T& as() const& {
     return std::get<T>(v);
   }
 

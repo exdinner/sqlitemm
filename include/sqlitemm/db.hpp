@@ -1,9 +1,14 @@
 #ifndef SQLITEMM_SQLITEMM_DB_HPP_
 #define SQLITEMM_SQLITEMM_DB_HPP_
 
+#include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <string>
 #include <unordered_set>
+#include <vector>
+
+#include "sqlitemm/value.hpp"
 
 namespace sqlitemm {
 
@@ -27,8 +32,16 @@ public:
   virtual ~DB();
 
   void close();
-
-  Stmt prepare(const std::string& statement);
+  [[nodiscard]] Stmt prepare(const std::string& statement);
+  // a wrapper around `DB::prepare` and `Stmt::each_row`
+  DB& exec(const std::string& statement,
+           const std::function<void(const std::vector<std::string>&, const std::vector<Value>&)>& callback);
+  DB& exec(const std::string& statement, const std::function<void(const std::vector<Value>&)>& callback);
+  // return the number of rows modified, inserted or deleted by the most
+  // recently completed `INSERT`, `UPDATE` or `DELETE` statement on this
+  // database connection(`DB`)
+  [[nodiscard]] std::int64_t changes();
+  [[nodiscard]] std::int64_t total_changes();
 
 protected:
   void* sqlite3_ptr{nullptr};
