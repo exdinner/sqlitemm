@@ -4,6 +4,34 @@
 
 namespace sqlitemm {
 
+Value Value::of_integer(const Integer& i) {
+  return Value{i};
+}
+
+Value Value::of_float(const Float& f) {
+  return Value{f};
+}
+
+Value Value::of_text(const Text& t) {
+  return Value{t};
+}
+
+Value Value::of_text(Text&& t) {
+  return Value{std::move(t)};
+}
+
+Value Value::of_blob(const Blob& b) {
+  return Value{b};
+}
+
+Value Value::of_blob(Blob&& b) {
+  return Value{std::move(b)};
+}
+
+Value Value::of_null(const Null& n) {
+  return Value{n};
+}
+
 Value::Value() : v(nullptr), t(Type::NUL) {
 }
 

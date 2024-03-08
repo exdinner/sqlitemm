@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -70,9 +71,11 @@ Stmt& Stmt::bind(const int& index, const Value& value, const bool& copy) {
       break;
     }
     case Value::Type::NUL: sqlite3_bind_null(stmt, index); break;
+    default:
+      // should not happen
+      std::ignore = std::fprintf(stderr, "failed to bind parameter, which should not happen.\n");
+      break;
   }
-  // should not happen
-  std::ignore = std::fprintf(stderr, "failed to bind parameter, which should not happen.\n");
   return *this;
 }
 
@@ -84,6 +87,15 @@ Stmt& Stmt::bind(const std::string& id, const Value& value, const bool& copy) {
     return *this;
   }
   return bind(index, value, copy);
+}
+
+Stmt& Stmt::reset() {
+  int ret = sqlite3_reset(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr));
+  if (ret != SQLITE_OK) {
+    std::ignore = std::fprintf(
+      stderr, "error while reseting Stmt: %s\n", sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr->sqlite3_ptr)));
+  }
+  return *this;
 }
 
 void Stmt::close() {
@@ -104,7 +116,7 @@ Stmt& Stmt::each_row(const std::function<void(const std::vector<Value>&)>& callb
   sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
   int ret = sqlite3_step(stmt);
   int column_count = sqlite3_column_count(stmt);
-  std::vector<Value> row(column_count, Value::of(nullptr));
+  std::vector<Value> row(column_count, Value::of_null(nullptr));
   while (ret != SQLITE_DONE) {
     if (ret == SQLITE_ROW) {
       for (int i = 0; i < column_count; i++) {
@@ -120,6 +132,13 @@ Stmt& Stmt::each_row(const std::function<void(const std::vector<Value>&)>& callb
     }
   }
   return *this;
+}
+
+Stmt& Stmt::each_row(const std::function<void(const std::vector<std::string>&, const std::vector<Value>&)>& callback) {
+  const std::vector<std::string> column_names = this->column_names();
+  return each_row([&column_names, &callback](const std::vector<Value>& row) -> void {
+    callback(column_names, row);
+  });
 }
 
 std::vector<std::string> Stmt::column_names() {

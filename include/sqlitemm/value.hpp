@@ -20,10 +20,13 @@ public:
 
   enum class Type : std::uint8_t { INTEGER, FLOAT, TEXT, BLOB, NUL };
 
-  template <typename T>
-  static Value of(const T& value) {
-    return Value{value};
-  }
+  static Value of_integer(const Integer& i);
+  static Value of_float(const Float& f);
+  static Value of_text(const Text& t);
+  static Value of_text(Text&& t);
+  static Value of_blob(const Blob& b);
+  static Value of_blob(Blob&& b);
+  static Value of_null(const Null& n);
 
   Value();
   explicit Value(const Integer& i);
@@ -49,12 +52,12 @@ public:
 
   template <typename T>
   void reset(const T& value) {
-    *this = of(value);
+    *this = Value{value};
   }
 
   template <typename T>
   void reset(T&& value) {
-    *this = std::move(of(value));
+    *this = std::move(Value{std::forward<T>(value)});
   }
 
 protected:
