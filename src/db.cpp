@@ -5,10 +5,12 @@
 #include <filesystem>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "sqlite3.h"
 
 #include "sqlitemm/stmt.hpp"
+#include "sqlitemm/value.hpp"
 
 namespace sqlitemm {
 
@@ -73,6 +75,16 @@ DB& DB::exec(const std::string& statement, const std::function<void(const std::v
 
 [[nodiscard]] std::int64_t DB::changes() {
   return sqlite3_changes64(reinterpret_cast<sqlite3*>(sqlite3_ptr));
+}
+
+[[nodiscard]] std::vector<std::string> DB::table_names() {
+  std::vector<std::string> names;
+  exec("SELECT name from sqlite_schema where type == 'table';", [&names](const std::vector<Value>& row) -> void {
+    for (const Value& name : row) {
+      names.emplace_back(name.as<Value::Text>());
+    }
+  });
+  return names;
 }
 
 [[nodiscard]] std::int64_t DB::total_changes() {

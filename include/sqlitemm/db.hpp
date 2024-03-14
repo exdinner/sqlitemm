@@ -43,6 +43,11 @@ public:
   [[nodiscard]] std::int64_t changes();
   [[nodiscard]] std::int64_t total_changes();
 
+  // return names of all tables in the database
+  // by exec `SELECT name from sqlite_schema where type == 'table';`
+  // doc: https://www.sqlite.org/schematab.html
+  [[nodiscard]] std::vector<std::string> table_names();
+
 protected:
   void* sqlite3_ptr{nullptr};
   std::unordered_set<Stmt*> stmt_ptrs;
