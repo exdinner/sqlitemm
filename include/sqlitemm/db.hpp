@@ -37,6 +37,7 @@ public:
   DB& exec(const std::string& statement,
            const std::function<void(const std::vector<std::string>&, const std::vector<Value>&)>& callback);
   DB& exec(const std::string& statement, const std::function<void(const std::vector<Value>&)>& callback);
+  DB& exec(const std::string& statement);
   // return the number of rows modified, inserted or deleted by the most
   // recently completed `INSERT`, `UPDATE` or `DELETE` statement on this
   // database connection(`DB`)

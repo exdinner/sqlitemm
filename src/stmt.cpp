@@ -120,6 +120,17 @@ void Stmt::close() {
   db_ptr->stmt_ptrs.erase(this);
 }
 
+Stmt& Stmt::each_row(const std::function<void(const std::vector<std::string>&, const std::vector<Value>&)>& callback) {
+  if (sqlite3_stmt_ptr == nullptr) {
+    // already closed
+    return *this;
+  }
+  const std::vector<std::string> column_names = this->column_names();
+  return each_row([&column_names, &callback](const std::vector<Value>& row) -> void {
+    callback(column_names, row);
+  });
+}
+
 Stmt& Stmt::each_row(const std::function<void(const std::vector<Value>&)>& callback) {
   if (sqlite3_stmt_ptr == nullptr) {
     // already closed
@@ -146,11 +157,24 @@ Stmt& Stmt::each_row(const std::function<void(const std::vector<Value>&)>& callb
   return *this;
 }
 
-Stmt& Stmt::each_row(const std::function<void(const std::vector<std::string>&, const std::vector<Value>&)>& callback) {
-  const std::vector<std::string> column_names = this->column_names();
-  return each_row([&column_names, &callback](const std::vector<Value>& row) -> void {
-    callback(column_names, row);
-  });
+Stmt& Stmt::each_row() {
+  if (sqlite3_stmt_ptr == nullptr) {
+    // already closed
+    return *this;
+  }
+  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
+  int ret = sqlite3_step(stmt);
+  while (ret != SQLITE_DONE) {
+    if (ret == SQLITE_ROW) {
+      ret = sqlite3_step(stmt);
+    } else {
+      std::ignore = std::fprintf(stderr,
+                                 "failed to setp sqlite3 statement: %s\n",
+                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr->sqlite3_ptr)));
+      break;
+    }
+  }
+  return *this;
 }
 
 [[nodiscard]] std::int64_t Stmt::changes() {

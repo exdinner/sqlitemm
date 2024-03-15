@@ -73,6 +73,12 @@ DB& DB::exec(const std::string& statement, const std::function<void(const std::v
   return *this;
 }
 
+DB& DB::exec(const std::string& statement) {
+  Stmt stmt{prepare(statement)};
+  stmt.each_row();
+  return *this;
+}
+
 [[nodiscard]] std::int64_t DB::changes() {
   return sqlite3_changes64(reinterpret_cast<sqlite3*>(sqlite3_ptr));
 }
