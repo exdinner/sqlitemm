@@ -48,7 +48,7 @@ Stmt::~Stmt() {
 }
 
 Stmt& Stmt::bind(const int& index, const Value& value, const bool& copy) {
-  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
+  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
   if (stmt == nullptr) {
     // already closed
     return *this;
@@ -83,7 +83,7 @@ Stmt& Stmt::bind(const int& index, const Value& value, const bool& copy) {
 }
 
 Stmt& Stmt::bind(const std::string& id, const Value& value, const bool& copy) {
-  const int index = sqlite3_bind_parameter_index(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr), id.c_str());
+  const int index = sqlite3_bind_parameter_index(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_), id.c_str());
   if (index == 0) {
     std::ignore
       = std::fprintf(stderr, "failed to bind parameter: could not find SQL parameter named %s.\n", id.c_str());
@@ -93,16 +93,16 @@ Stmt& Stmt::bind(const std::string& id, const Value& value, const bool& copy) {
 }
 
 Stmt& Stmt::reset() {
-  int ret = sqlite3_reset(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr));
+  int ret = sqlite3_reset(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_));
   if (ret != SQLITE_OK) {
     std::ignore = std::fprintf(
-      stderr, "error while reseting Stmt: %s\n", sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr->sqlite3_ptr)));
+      stderr, "error while reseting Stmt: %s\n", sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
   }
   return *this;
 }
 
 Stmt& Stmt::clear_bindings() {
-  int ret = sqlite3_clear_bindings(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr));
+  int ret = sqlite3_clear_bindings(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_));
   if (ret != SQLITE_OK) {
     std::ignore = std::fprintf(stderr, "something wrong with `sqlite3_clear_bindings`: %s\n", sqlite3_errstr(ret));
   }
@@ -110,18 +110,18 @@ Stmt& Stmt::clear_bindings() {
 }
 
 void Stmt::close() {
-  int ret = sqlite3_finalize(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr));
+  int ret = sqlite3_finalize(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_));
   if (ret != SQLITE_OK) {
     std::ignore
       = std::fprintf(stderr, "failed to finalize statement (may cause memory leak): %s\n", sqlite3_errstr(ret));
   }
-  sqlite3_stmt_ptr = nullptr;
+  sqlite3_stmt_ptr_ = nullptr;
   // TODO(rayalto): thread safety
-  db_ptr->stmt_ptrs.erase(this);
+  db_ptr_->stmt_ptrs_.erase(this);
 }
 
 Stmt& Stmt::each_row(const std::function<void(const std::vector<std::string>&, const std::vector<Value>&)>& callback) {
-  if (sqlite3_stmt_ptr == nullptr) {
+  if (sqlite3_stmt_ptr_ == nullptr) {
     // already closed
     return *this;
   }
@@ -132,11 +132,11 @@ Stmt& Stmt::each_row(const std::function<void(const std::vector<std::string>&, c
 }
 
 Stmt& Stmt::each_row(const std::function<void(const std::vector<Value>&)>& callback) {
-  if (sqlite3_stmt_ptr == nullptr) {
+  if (sqlite3_stmt_ptr_ == nullptr) {
     // already closed
     return *this;
   }
-  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
+  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
   int ret = sqlite3_step(stmt);
   int column_count = sqlite3_column_count(stmt);
   std::vector<Value> row(column_count, Value::of_null(nullptr));
@@ -150,7 +150,7 @@ Stmt& Stmt::each_row(const std::function<void(const std::vector<Value>&)>& callb
     } else {
       std::ignore = std::fprintf(stderr,
                                  "failed to setp sqlite3 statement: %s\n",
-                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr->sqlite3_ptr)));
+                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
       break;
     }
   }
@@ -158,11 +158,11 @@ Stmt& Stmt::each_row(const std::function<void(const std::vector<Value>&)>& callb
 }
 
 Stmt& Stmt::each_row() {
-  if (sqlite3_stmt_ptr == nullptr) {
+  if (sqlite3_stmt_ptr_ == nullptr) {
     // already closed
     return *this;
   }
-  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
+  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
   int ret = sqlite3_step(stmt);
   while (ret != SQLITE_DONE) {
     if (ret == SQLITE_ROW) {
@@ -170,7 +170,7 @@ Stmt& Stmt::each_row() {
     } else {
       std::ignore = std::fprintf(stderr,
                                  "failed to setp sqlite3 statement: %s\n",
-                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr->sqlite3_ptr)));
+                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
       break;
     }
   }
@@ -178,11 +178,11 @@ Stmt& Stmt::each_row() {
 }
 
 [[nodiscard]] std::int64_t Stmt::changes() {
-  return db_ptr->changes();
+  return db_ptr_->changes();
 }
 
 [[nodiscard]] std::string Stmt::column_name(int column_index) {
-  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
+  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
   int column_count = sqlite3_column_count(stmt);
   if (column_index < 0 || column_index >= column_count) {
     std::ignore = std::fprintf(
@@ -193,7 +193,7 @@ Stmt& Stmt::each_row() {
 }
 
 [[nodiscard]] std::vector<std::string> Stmt::column_names() {
-  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
+  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
   int column_count = sqlite3_column_count(stmt);
   std::vector<std::string> names;
   names.reserve(column_count);
@@ -204,11 +204,11 @@ Stmt& Stmt::each_row() {
 }
 
 [[nodiscard]] std::vector<std::vector<Value>> Stmt::all_rows() {
-  if (sqlite3_stmt_ptr == nullptr) {
+  if (sqlite3_stmt_ptr_ == nullptr) {
     // already closed
     return {};
   }
-  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr);
+  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
   int ret = sqlite3_step(stmt);
   int column_count = sqlite3_column_count(stmt);
   std::vector<std::vector<Value>> all;
@@ -224,18 +224,18 @@ Stmt& Stmt::each_row() {
     } else {
       std::ignore = std::fprintf(stderr,
                                  "failed to setp sqlite3 statement: %s\n",
-                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr->sqlite3_ptr)));
+                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
       break;
     }
   }
   return all;
 }
 
-Stmt::Stmt(DB* db, const std::string& statement) : db_ptr(db) {
-  sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_ptr->sqlite3_ptr),
+Stmt::Stmt(DB* db, const std::string& statement) : db_ptr_(db) {
+  sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_),
                      statement.c_str(),
                      static_cast<int>(statement.length()),
-                     reinterpret_cast<sqlite3_stmt**>(&sqlite3_stmt_ptr),
+                     reinterpret_cast<sqlite3_stmt**>(&sqlite3_stmt_ptr_),
                      nullptr);
 }
 

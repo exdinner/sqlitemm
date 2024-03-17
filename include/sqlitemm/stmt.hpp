@@ -44,8 +44,8 @@ public:
 protected:
   explicit Stmt(DB* db, const std::string& statement);
 
-  void* sqlite3_stmt_ptr{nullptr};
-  DB* db_ptr{nullptr};
+  void* sqlite3_stmt_ptr_{nullptr};
+  DB* db_ptr_{nullptr};
 };
 
 } // namespace sqlitemm

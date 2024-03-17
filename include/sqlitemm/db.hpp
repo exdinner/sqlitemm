@@ -49,10 +49,13 @@ public:
   // doc: https://www.sqlite.org/schematab.html
   [[nodiscard]] std::vector<std::string> table_names();
 
+  // if the db is in autocommit mode
+  [[nodiscard]] bool autocommit();
+
 protected:
-  void* sqlite3_ptr{nullptr};
-  std::unordered_set<Stmt*> stmt_ptrs;
-  std::filesystem::path db_file;
+  void* sqlite3_ptr_{nullptr};
+  std::unordered_set<Stmt*> stmt_ptrs_;
+  std::filesystem::path db_file_;
 
   void open();
 };

@@ -47,7 +47,7 @@ public:
 
   template <typename T>
   [[nodiscard]] const T& as() const& {
-    return std::get<T>(v);
+    return std::get<T>(v_);
   }
 
   template <typename T>
@@ -61,8 +61,8 @@ public:
   }
 
 protected:
-  std::variant<Integer, Float, Text, Blob, Null> v;
-  Type t;
+  std::variant<Integer, Float, Text, Blob, Null> v_;
+  Type t_;
 };
 
 } // namespace sqlitemm

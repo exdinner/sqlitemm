@@ -32,32 +32,32 @@ Value Value::of_null(const Null& n) {
   return Value{n};
 }
 
-Value::Value() : v(nullptr), t(Type::NUL) {
+Value::Value() : v_(nullptr), t_(Type::NUL) {
 }
 
-Value::Value(const Integer& i) : v(i), t(Type::INTEGER) {
+Value::Value(const Integer& i) : v_(i), t_(Type::INTEGER) {
 }
 
-Value::Value(const Float& f) : v(f), t(Type::FLOAT) {
+Value::Value(const Float& f) : v_(f), t_(Type::FLOAT) {
 }
 
-Value::Value(const Text& t) : v(t), t(Type::TEXT) {
+Value::Value(const Text& t) : v_(t), t_(Type::TEXT) {
 }
 
-Value::Value(Text&& t) : v(std::move(t)), t(Type::TEXT) {
+Value::Value(Text&& t) : v_(std::move(t)), t_(Type::TEXT) {
 }
 
-Value::Value(const Blob& b) : v(b), t(Type::BLOB) {
+Value::Value(const Blob& b) : v_(b), t_(Type::BLOB) {
 }
 
-Value::Value(Blob&& b) : v(std::move(b)), t(Type::BLOB) {
+Value::Value(Blob&& b) : v_(std::move(b)), t_(Type::BLOB) {
 }
 
-Value::Value(const Null& n) : v(n), t(Type::NUL) {
+Value::Value(const Null& n) : v_(n), t_(Type::NUL) {
 }
 
 [[nodiscard]] const Value::Type& Value::type() const& {
-  return t;
+  return t_;
 }
 
 } // namespace sqlitemm
