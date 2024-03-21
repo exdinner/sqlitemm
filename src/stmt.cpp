@@ -138,21 +138,30 @@ Stmt& Stmt::each_row(const std::function<void(const std::vector<Value>&)>& callb
   }
   sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
   int ret = sqlite3_step(stmt);
+  if (ret != SQLITE_DONE && ret != SQLITE_ROW) {
+    // failed to execute
+    std::ignore = std::fprintf(stderr,
+                               "failed to execute sqlite3 statement `%s`: %s\n",
+                               sqlite3_sql(stmt),
+                               sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
+    return *this;
+  }
   int column_count = sqlite3_column_count(stmt);
   std::vector<Value> row(column_count, Value::of_null(nullptr));
-  while (ret != SQLITE_DONE) {
-    if (ret == SQLITE_ROW) {
-      for (int i = 0; i < column_count; i++) {
-        row[i] = std::move(sqlite_value(stmt, i));
-      }
-      callback(row);
-      ret = sqlite3_step(stmt);
-    } else {
-      std::ignore = std::fprintf(stderr,
-                                 "failed to setp sqlite3 statement: %s\n",
-                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
-      break;
+  while (ret == SQLITE_ROW) {
+    for (int i = 0; i < column_count; i++) {
+      row[i] = std::move(sqlite_value(stmt, i));
     }
+    callback(row);
+    ret = sqlite3_step(stmt);
+  }
+  if (ret != SQLITE_DONE) {
+    // failed to step
+    std::ignore = std::fprintf(stderr,
+                               "failed to step sqlite3 statement `%s`: %s\n",
+                               sqlite3_sql(stmt),
+                               sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
+    return *this;
   }
   return *this;
 }
@@ -164,15 +173,24 @@ Stmt& Stmt::each_row() {
   }
   sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
   int ret = sqlite3_step(stmt);
-  while (ret != SQLITE_DONE) {
-    if (ret == SQLITE_ROW) {
-      ret = sqlite3_step(stmt);
-    } else {
-      std::ignore = std::fprintf(stderr,
-                                 "failed to setp sqlite3 statement: %s\n",
-                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
-      break;
-    }
+  if (ret != SQLITE_DONE && ret != SQLITE_ROW) {
+    // failed to execute
+    std::ignore = std::fprintf(stderr,
+                               "failed to execute sqlite3 statement `%s`: %s\n",
+                               sqlite3_sql(stmt),
+                               sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
+    return *this;
+  }
+  while (ret == SQLITE_ROW) {
+    ret = sqlite3_step(stmt);
+  }
+  if (ret != SQLITE_DONE) {
+    // failed to step
+    std::ignore = std::fprintf(stderr,
+                               "failed to step sqlite3 statement `%s`: %s\n",
+                               sqlite3_sql(stmt),
+                               sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
+    return *this;
   }
   return *this;
 }
@@ -210,23 +228,31 @@ Stmt& Stmt::each_row() {
   }
   sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
   int ret = sqlite3_step(stmt);
+  if (ret != SQLITE_DONE && ret != SQLITE_ROW) {
+    // failed to execute
+    std::ignore = std::fprintf(stderr,
+                               "failed to execute sqlite3 statement `%s`: %s\n",
+                               sqlite3_sql(stmt),
+                               sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
+    return {};
+  }
   int column_count = sqlite3_column_count(stmt);
   std::vector<std::vector<Value>> all;
-  while (ret != SQLITE_DONE) {
-    std::vector<Value> row;
-    row.reserve(column_count);
-    if (ret == SQLITE_ROW) {
-      for (int i = 0; i < column_count; i++) {
-        row.emplace_back(std::move(sqlite_value(stmt, i)));
-      }
-      all.emplace_back(std::move(row));
-      ret = sqlite3_step(stmt);
-    } else {
-      std::ignore = std::fprintf(stderr,
-                                 "failed to setp sqlite3 statement: %s\n",
-                                 sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
-      break;
+  std::vector<Value> row;
+  row.reserve(column_count);
+  while (ret == SQLITE_ROW) {
+    for (int i = 0; i < column_count; i++) {
+      row.emplace_back(std::move(sqlite_value(stmt, i)));
     }
+    all.emplace_back(std::move(row));
+    ret = sqlite3_step(stmt);
+  }
+  if (ret != SQLITE_DONE) {
+    // failed to step
+    std::ignore = std::fprintf(stderr,
+                               "failed to step sqlite3 statement `%s`: %s\n",
+                               sqlite3_sql(stmt),
+                               sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
   }
   return all;
 }
