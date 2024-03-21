@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -82,11 +83,10 @@ Stmt& Stmt::bind(const int& index, const Value& value, const bool& copy) {
   return *this;
 }
 
-Stmt& Stmt::bind(const std::string& id, const Value& value, const bool& copy) {
-  const int index = sqlite3_bind_parameter_index(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_), id.c_str());
+Stmt& Stmt::bind(std::string_view id, const Value& value, const bool& copy) {
+  const int index = sqlite3_bind_parameter_index(reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_), id.data());
   if (index == 0) {
-    std::ignore
-      = std::fprintf(stderr, "failed to bind parameter: could not find SQL parameter named %s.\n", id.c_str());
+    std::ignore = std::fprintf(stderr, "failed to bind parameter: could not find SQL parameter named %s.\n", id.data());
     return *this;
   }
   return bind(index, value, copy);
@@ -231,9 +231,9 @@ Stmt& Stmt::each_row() {
   return all;
 }
 
-Stmt::Stmt(DB* db, const std::string& statement) : db_ptr_(db) {
+Stmt::Stmt(DB* db, std::string_view statement) : db_ptr_(db) {
   sqlite3_prepare_v2(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_),
-                     statement.c_str(),
+                     statement.data(),
                      static_cast<int>(statement.length()),
                      reinterpret_cast<sqlite3_stmt**>(&sqlite3_stmt_ptr_),
                      nullptr);

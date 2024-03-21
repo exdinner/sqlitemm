@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -56,24 +57,24 @@ void DB::close() {
   sqlite3_ptr_ = nullptr;
 }
 
-[[nodiscard]] Stmt DB::prepare(const std::string& statement) {
+[[nodiscard]] Stmt DB::prepare(std::string_view statement) {
   return Stmt(this, statement);
 }
 
-DB& DB::exec(const std::string& statement,
+DB& DB::exec(std::string_view statement,
              const std::function<void(const std::vector<std::string>&, const std::vector<Value>&)>& callback) {
   Stmt stmt{prepare(statement)};
   stmt.each_row(callback);
   return *this;
 }
 
-DB& DB::exec(const std::string& statement, const std::function<void(const std::vector<Value>&)>& callback) {
+DB& DB::exec(std::string_view statement, const std::function<void(const std::vector<Value>&)>& callback) {
   Stmt stmt{prepare(statement)};
   stmt.each_row(callback);
   return *this;
 }
 
-DB& DB::exec(const std::string& statement) {
+DB& DB::exec(std::string_view statement) {
   Stmt stmt{prepare(statement)};
   stmt.each_row();
   return *this;

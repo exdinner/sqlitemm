@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <functional>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <vector>
 
@@ -32,12 +33,12 @@ public:
   virtual ~DB();
 
   void close();
-  [[nodiscard]] Stmt prepare(const std::string& statement);
+  [[nodiscard]] Stmt prepare(std::string_view statement);
   // a wrapper around `DB::prepare` and `Stmt::each_row`
-  DB& exec(const std::string& statement,
+  DB& exec(std::string_view statement,
            const std::function<void(const std::vector<std::string>&, const std::vector<Value>&)>& callback);
-  DB& exec(const std::string& statement, const std::function<void(const std::vector<Value>&)>& callback);
-  DB& exec(const std::string& statement);
+  DB& exec(std::string_view statement, const std::function<void(const std::vector<Value>&)>& callback);
+  DB& exec(std::string_view statement);
   // return the number of rows modified, inserted or deleted by the most
   // recently completed `INSERT`, `UPDATE` or `DELETE` statement on this
   // database connection(`DB`)

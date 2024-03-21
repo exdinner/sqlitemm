@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "sqlitemm/value.hpp"
@@ -26,7 +27,7 @@ public:
   virtual ~Stmt();
 
   Stmt& bind(const int& index, const Value& value, const bool& copy = true);
-  Stmt& bind(const std::string& id, const Value& value, const bool& copy = true);
+  Stmt& bind(std::string_view id, const Value& value, const bool& copy = true);
   // reset `Stmt` back to its initial state, ready to be re-executed
   // bound `Value` s are retained, use `clear_bindings` to reset the bindings
   // or use `bind` to overwrite the previous binding
@@ -42,7 +43,7 @@ public:
   [[nodiscard]] std::vector<std::vector<Value>> all_rows();
 
 protected:
-  explicit Stmt(DB* db, const std::string& statement);
+  explicit Stmt(DB* db, std::string_view statement);
 
   void* sqlite3_stmt_ptr_{nullptr};
   DB* db_ptr_{nullptr};
