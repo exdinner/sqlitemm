@@ -1,6 +1,7 @@
 #ifndef SQLITEMM_SQLITEMM_VALUE_HPP_
 #define SQLITEMM_SQLITEMM_VALUE_HPP_
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -26,6 +27,12 @@ public:
   static Value of_text(Text&& t);
   static Value of_blob(const Blob& b);
   static Value of_blob(Blob&& b);
+
+  template <std::size_t size>
+  static Value of_blob(const std::array<std::uint8_t, size>& b) {
+    return of_blob(Blob{b.begin(), b.end()});
+  }
+
   static Value of_null(const Null& n);
 
   Value();
