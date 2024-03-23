@@ -21,5 +21,11 @@ int main(int argc, const char* argv[]) {
     [](const std::vector<std::string>& column_names, const std::vector<sqlitemm::Value>& row) -> void {
     std::printf("%s: %s\n", column_names[1].c_str(), row[1].as<sqlitemm::Value::Text>().c_str());
   });
+  sqlitemm::DB{"/home/rayalto/Documents/test.db"}
+    .prepare("select * from customers where cust_id == ?;")
+    .bind(1, sqlitemm::Value::of_integer(10001))
+    .each_row([](const std::vector<sqlitemm::Value>& row) -> void {
+    std::printf("name: %s\n", row[1].as<sqlitemm::Value::Text>().c_str());
+  });
   return 0;
 }
