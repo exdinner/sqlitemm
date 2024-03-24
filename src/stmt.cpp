@@ -275,6 +275,13 @@ Stmt::Stmt(DB* db, std::string_view statement) : db_ptr_(db) {
                      static_cast<int>(statement.length()),
                      reinterpret_cast<sqlite3_stmt**>(&sqlite3_stmt_ptr_),
                      nullptr);
+  sqlite3_stmt* stmt = reinterpret_cast<sqlite3_stmt*>(sqlite3_stmt_ptr_);
+  if (stmt == nullptr) {
+    std::ignore = std::fprintf(stderr,
+                               "failed to prepare sqlite3 statement `%s`: %s\n",
+                               statement.data(),
+                               sqlite3_errmsg(reinterpret_cast<sqlite3*>(db_ptr_->sqlite3_ptr_)));
+  }
 }
 
 } // namespace sqlitemm
